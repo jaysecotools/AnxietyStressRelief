@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binaural Therapy | Anxiety & Stress Relief</title>
+    <title>3D Binaural Therapy | Heartbeat Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -59,9 +60,6 @@
             padding: 8px 15px;
             cursor: pointer;
         }
-        #breathSlider {
-            width: 200px;
-        }
         .slider-container {
             display: flex;
             align-items: center;
@@ -74,13 +72,9 @@
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
+    <div id="canvas"></div>
     <div id="controls">
         <button id="modeToggle">Stress Relief (10Hz Alpha)</button>
-        <div class="slider-container">
-            <label>Breath Rate:</label>
-            <input type="range" id="breathSlider" min="2" max="10" step="0.5" value="4">
-        </div>
         <button id="playButton">▶</button>
     </div>
 
@@ -89,8 +83,13 @@
         class BinauralTherapy {
             constructor() {
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                this.baseFrequency = 150; // Pleasant carrier frequency
                 this.currentMode = "stress"; // "stress" or "anxiety"
+                
+                // Base frequencies (distinct enough to feel different)
+                this.baseFrequencies = {
+                    stress: { left: 200, right: 210 }, // 10Hz Alpha
+                    anxiety: { left: 180, right: 186 }  // 6Hz Theta
+                };
                 
                 // Audio nodes
                 this.merger = this.audioContext.createChannelMerger(2);
@@ -131,13 +130,9 @@
             }
             
             setFrequency() {
-                if (this.currentMode === "stress") {
-                    this.oscillators.left.frequency.value = this.baseFrequency - 5; // 10Hz difference (Alpha)
-                    this.oscillators.right.frequency.value = this.baseFrequency + 5;
-                } else { // "anxiety"
-                    this.oscillators.left.frequency.value = this.baseFrequency - 3; // 6Hz difference (Theta)
-                    this.oscillators.right.frequency.value = this.baseFrequency + 3;
-                }
+                const freq = this.baseFrequencies[this.currentMode];
+                this.oscillators.left.frequency.value = freq.left;
+                this.oscillators.right.frequency.value = freq.right;
             }
             
             toggleMode() {
@@ -148,16 +143,16 @@
             
             startSpatialMovement() {
                 let angle = 0;
-                const radius = 2.0; // Wider movement for more pronounced effect
+                const radius = 2.5; // Wider movement for stronger effect
                 
-                // Enhanced 8D movement (breath-synced)
+                // Enhanced 8D movement (smoother and deeper)
                 const moveSound = () => {
-                    angle += 0.005;
+                    angle += 0.003;
                     
-                    // Circular motion with slight vertical variation
+                    // Circular motion with vertical variation
                     const x = Math.cos(angle) * radius;
-                    const z = Math.sin(angle) * radius;
-                    const y = Math.sin(angle * 2) * 0.3; // Subtle up/down motion
+                    const z = Math.sin(angle * 1.5) * radius;
+                    const y = Math.sin(angle * 2) * 0.5;
                     
                     this.panner.setPosition(x, y, z);
                     requestAnimationFrame(moveSound);
@@ -181,100 +176,131 @@
             }
         }
 
-        // ===== BREATH-SYNCED VISUALIZER =====
-        class BreathVisualizer {
-            constructor(canvas) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
+        // ===== 3D HEARTBEAT VISUALIZER =====
+        class HeartbeatVisualizer {
+            constructor(container) {
+                this.container = container;
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(
+                    75, 
+                    window.innerWidth / window.innerHeight, 
+                    0.1, 
+                    1000
+                );
+                this.camera.position.z = 30;
                 
-                this.time = 0;
-                this.breathPhase = 0; // 0-1 (inhale/exhale cycle)
-                this.breathSpeed = 4; // Breaths per minute (default)
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.container.appendChild(this.renderer.domElement);
                 
-                // Colors for different moods
-                this.colors = {
-                    stress: { r: 100, g: 200, b: 255 }, // Calm blue
-                    anxiety: { r: 150, g: 100, b: 255 } // Soothing purple
+                // Heartbeat settings (60BPM = 1 beat per second)
+                this.heartRate = 60; // BPM
+                this.beatPhase = 0; // 0-1 for pulse animation
+                
+                // Create a 3D heart
+                this.heart = this.createHeart();
+                this.scene.add(this.heart);
+                
+                // Add floating particles
+                this.particles = this.createParticles();
+                this.scene.add(this.particles);
+                
+                // Start animation
+                this.animate();
+                window.addEventListener('resize', () => this.onWindowResize());
+            }
+            
+            createHeart() {
+                const heartShape = new THREE.Shape();
+                heartShape.moveTo(0, 0);
+                heartShape.bezierCurveTo(2, 2, 3, 0, 0, -3);
+                heartShape.bezierCurveTo(-3, 0, -2, 2, 0, 0);
+                
+                const extrudeSettings = {
+                    depth: 2,
+                    bevelEnabled: true,
+                    bevelSegments: 2,
+                    steps: 2,
+                    bevelSize: 0.5,
+                    bevelThickness: 0.5
                 };
                 
-                this.animate();
+                const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0xff3366,
+                    emissive: 0xff0066,
+                    specular: 0xff9999,
+                    shininess: 30,
+                    flatShading: true
+                });
+                
+                return new THREE.Mesh(geometry, material);
             }
             
-            resize() {
-                this.width = this.canvas.width = window.innerWidth;
-                this.height = this.canvas.height = window.innerHeight;
-                this.center = { x: this.width / 2, y: this.height / 2 };
-                this.maxRadius = Math.min(this.width, this.height) * 0.4;
-            }
-            
-            setBreathSpeed(speed) {
-                this.breathSpeed = speed;
+            createParticles() {
+                const particleCount = 500;
+                const particles = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = (Math.random() - 0.5) * 100;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+                    
+                    colors[i * 3] = 0.8 + Math.random() * 0.2;
+                    colors[i * 3 + 1] = 0.2 + Math.random() * 0.3;
+                    colors[i * 3 + 2] = 0.5 + Math.random() * 0.5;
+                }
+                
+                particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                
+                const particleMaterial = new THREE.PointsMaterial({
+                    size: 0.5,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                return new THREE.Points(particles, particleMaterial);
             }
             
             animate() {
-                this.time += 0.005;
-                
-                // Update breath phase (0-1 cycle)
-                this.breathPhase = 0.5 + 0.5 * Math.sin(this.time * (this.breathSpeed / 10));
-                
-                // Clear canvas with a subtle fade effect
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-                this.ctx.fillRect(0, 0, this.width, this.height);
-                
-                // Draw breathing circle
-                const pulseRadius = this.maxRadius * (0.7 + 0.3 * this.breathPhase);
-                const gradient = this.ctx.createRadialGradient(
-                    this.center.x, this.center.y, pulseRadius * 0.5,
-                    this.center.x, this.center.y, pulseRadius
-                );
-                
-                gradient.addColorStop(0, 'rgba(100, 200, 255, 0.8)');
-                gradient.addColorStop(1, 'rgba(100, 200, 255, 0)');
-                
-                this.ctx.beginPath();
-                this.ctx.arc(this.center.x, this.center.y, pulseRadius, 0, Math.PI * 2);
-                this.ctx.fillStyle = gradient;
-                this.ctx.fill();
-                
-                // Add hypnotic spiral (breath-synced)
-                const spiralTurns = 3;
-                const spiralPoints = 100;
-                for (let i = 0; i < spiralPoints; i++) {
-                    const progress = i / spiralPoints;
-                    const radius = pulseRadius * progress;
-                    const angle = this.time * 2 + progress * Math.PI * 2 * spiralTurns;
-                    
-                    const x = this.center.x + Math.cos(angle) * radius;
-                    const y = this.center.y + Math.sin(angle) * radius;
-                    
-                    const size = 2 + 5 * (1 - progress);
-                    const alpha = 0.3 + 0.7 * Math.sin(this.breathPhase * Math.PI);
-                    
-                    this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                    this.ctx.beginPath();
-                    this.ctx.arc(x, y, size, 0, Math.PI * 2);
-                    this.ctx.fill();
-                }
-                
                 requestAnimationFrame(() => this.animate());
+                
+                // Heartbeat pulse (60BPM = 1 beat per second)
+                this.beatPhase += 0.01;
+                const pulse = 1 + 0.2 * Math.sin(this.beatPhase * Math.PI * 2);
+                this.heart.scale.set(pulse, pulse, pulse);
+                
+                // Gentle glow effect
+                this.heart.material.emissiveIntensity = 0.5 + 0.3 * Math.sin(this.beatPhase * Math.PI);
+                
+                // Rotate particles slowly
+                this.particles.rotation.x += 0.001;
+                this.particles.rotation.y += 0.002;
+                
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
             }
         }
 
         // ===== MAIN APP =====
         document.addEventListener('DOMContentLoaded', () => {
-            const canvas = document.getElementById('canvas');
+            const container = document.getElementById('canvas');
             const playButton = document.getElementById('playButton');
             const modeToggle = document.getElementById('modeToggle');
-            const breathSlider = document.getElementById('breathSlider');
             
             // Initialize systems
-            const visualizer = new BreathVisualizer(canvas);
+            const visualizer = new HeartbeatVisualizer(container);
             const audioTherapy = new BinauralTherapy();
-            
-            // Set initial breath rate
-            visualizer.setBreathSpeed(parseFloat(breathSlider.value));
             
             // Play/pause button
             playButton.addEventListener('click', () => {
@@ -290,15 +316,10 @@
                     : "Anxiety Relief (6Hz Theta)";
             });
             
-            // Adjust breath rate
-            breathSlider.addEventListener('input', () => {
-                visualizer.setBreathSpeed(parseFloat(breathSlider.value));
-            });
-            
             // Enable fullscreen on tap
-            canvas.addEventListener('click', () => {
-                if (canvas.requestFullscreen) canvas.requestFullscreen();
-                else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+            container.addEventListener('click', () => {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
             });
             
             // Start audio on first interaction
