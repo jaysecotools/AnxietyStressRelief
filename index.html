@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binaural Therapy | Anxiety & Stress Relief</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+            color: white;
+            user-select: none;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+        #playButton {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #playButton:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        #modeToggle {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        #breathSlider {
+            width: 200px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-container label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="controls">
+        <button id="modeToggle">Stress Relief (10Hz Alpha)</button>
+        <div class="slider-container">
+            <label>Breath Rate:</label>
+            <input type="range" id="breathSlider" min="2" max="10" step="0.5" value="4">
+        </div>
+        <button id="playButton">▶</button>
+    </div>
+
+    <script>
+        // ===== AUDIO ENGINE =====
+        class BinauralTherapy {
+            constructor() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.baseFrequency = 150; // Pleasant carrier frequency
+                this.currentMode = "stress"; // "stress" or "anxiety"
+                
+                // Audio nodes
+                this.merger = this.audioContext.createChannelMerger(2);
+                this.panner = this.audioContext.createPanner();
+                this.panner.panningModel = 'HRTF';
+                this.panner.distanceModel = 'inverse';
+                this.panner.refDistance = 1;
+                this.panner.maxDistance = 10000;
+                
+                // Oscillators for binaural beats
+                this.oscillators = {
+                    left: this.audioContext.createOscillator(),
+                    right: this.audioContext.createOscillator()
+                };
+                
+                // Master gain
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.gain.value = 0;
+                
+                // Connect audio graph
+                this.oscillators.left.connect(this.merger, 0, 0);
+                this.oscillators.right.connect(this.merger, 0, 1);
+                this.merger.connect(this.panner);
+                this.panner.connect(this.masterGain);
+                this.masterGain.connect(this.audioContext.destination);
+                
+                // Configure oscillators
+                this.oscillators.left.type = 'sine';
+                this.oscillators.right.type = 'sine';
+                this.setFrequency();
+                
+                // Start oscillators
+                this.oscillators.left.start();
+                this.oscillators.right.start();
+                
+                // Start spatial movement
+                this.startSpatialMovement();
+            }
+            
+            setFrequency() {
+                if (this.currentMode === "stress") {
+                    this.oscillators.left.frequency.value = this.baseFrequency - 5; // 10Hz difference (Alpha)
+                    this.oscillators.right.frequency.value = this.baseFrequency + 5;
+                } else { // "anxiety"
+                    this.oscillators.left.frequency.value = this.baseFrequency - 3; // 6Hz difference (Theta)
+                    this.oscillators.right.frequency.value = this.baseFrequency + 3;
+                }
+            }
+            
+            toggleMode() {
+                this.currentMode = this.currentMode === "stress" ? "anxiety" : "stress";
+                this.setFrequency();
+                return this.currentMode;
+            }
+            
+            startSpatialMovement() {
+                let angle = 0;
+                const radius = 2.0; // Wider movement for more pronounced effect
+                
+                // Enhanced 8D movement (breath-synced)
+                const moveSound = () => {
+                    angle += 0.005;
+                    
+                    // Circular motion with slight vertical variation
+                    const x = Math.cos(angle) * radius;
+                    const z = Math.sin(angle) * radius;
+                    const y = Math.sin(angle * 2) * 0.3; // Subtle up/down motion
+                    
+                    this.panner.setPosition(x, y, z);
+                    requestAnimationFrame(moveSound);
+                };
+                
+                moveSound();
+            }
+            
+            togglePlayback() {
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                    this.masterGain.gain.value = 0.5;
+                    return true;
+                } else if (this.masterGain.gain.value > 0) {
+                    this.masterGain.gain.value = 0;
+                    return false;
+                } else {
+                    this.masterGain.gain.value = 0.5;
+                    return true;
+                }
+            }
+        }
+
+        // ===== BREATH-SYNCED VISUALIZER =====
+        class BreathVisualizer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                this.time = 0;
+                this.breathPhase = 0; // 0-1 (inhale/exhale cycle)
+                this.breathSpeed = 4; // Breaths per minute (default)
+                
+                // Colors for different moods
+                this.colors = {
+                    stress: { r: 100, g: 200, b: 255 }, // Calm blue
+                    anxiety: { r: 150, g: 100, b: 255 } // Soothing purple
+                };
+                
+                this.animate();
+            }
+            
+            resize() {
+                this.width = this.canvas.width = window.innerWidth;
+                this.height = this.canvas.height = window.innerHeight;
+                this.center = { x: this.width / 2, y: this.height / 2 };
+                this.maxRadius = Math.min(this.width, this.height) * 0.4;
+            }
+            
+            setBreathSpeed(speed) {
+                this.breathSpeed = speed;
+            }
+            
+            animate() {
+                this.time += 0.005;
+                
+                // Update breath phase (0-1 cycle)
+                this.breathPhase = 0.5 + 0.5 * Math.sin(this.time * (this.breathSpeed / 10));
+                
+                // Clear canvas with a subtle fade effect
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                // Draw breathing circle
+                const pulseRadius = this.maxRadius * (0.7 + 0.3 * this.breathPhase);
+                const gradient = this.ctx.createRadialGradient(
+                    this.center.x, this.center.y, pulseRadius * 0.5,
+                    this.center.x, this.center.y, pulseRadius
+                );
+                
+                gradient.addColorStop(0, 'rgba(100, 200, 255, 0.8)');
+                gradient.addColorStop(1, 'rgba(100, 200, 255, 0)');
+                
+                this.ctx.beginPath();
+                this.ctx.arc(this.center.x, this.center.y, pulseRadius, 0, Math.PI * 2);
+                this.ctx.fillStyle = gradient;
+                this.ctx.fill();
+                
+                // Add hypnotic spiral (breath-synced)
+                const spiralTurns = 3;
+                const spiralPoints = 100;
+                for (let i = 0; i < spiralPoints; i++) {
+                    const progress = i / spiralPoints;
+                    const radius = pulseRadius * progress;
+                    const angle = this.time * 2 + progress * Math.PI * 2 * spiralTurns;
+                    
+                    const x = this.center.x + Math.cos(angle) * radius;
+                    const y = this.center.y + Math.sin(angle) * radius;
+                    
+                    const size = 2 + 5 * (1 - progress);
+                    const alpha = 0.3 + 0.7 * Math.sin(this.breathPhase * Math.PI);
+                    
+                    this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // ===== MAIN APP =====
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('canvas');
+            const playButton = document.getElementById('playButton');
+            const modeToggle = document.getElementById('modeToggle');
+            const breathSlider = document.getElementById('breathSlider');
+            
+            // Initialize systems
+            const visualizer = new BreathVisualizer(canvas);
+            const audioTherapy = new BinauralTherapy();
+            
+            // Set initial breath rate
+            visualizer.setBreathSpeed(parseFloat(breathSlider.value));
+            
+            // Play/pause button
+            playButton.addEventListener('click', () => {
+                const isPlaying = audioTherapy.togglePlayback();
+                playButton.textContent = isPlaying ? '❚❚' : '▶';
+            });
+            
+            // Toggle between stress/anxiety modes
+            modeToggle.addEventListener('click', () => {
+                const newMode = audioTherapy.toggleMode();
+                modeToggle.textContent = newMode === "stress" 
+                    ? "Stress Relief (10Hz Alpha)" 
+                    : "Anxiety Relief (6Hz Theta)";
+            });
+            
+            // Adjust breath rate
+            breathSlider.addEventListener('input', () => {
+                visualizer.setBreathSpeed(parseFloat(breathSlider.value));
+            });
+            
+            // Enable fullscreen on tap
+            canvas.addEventListener('click', () => {
+                if (canvas.requestFullscreen) canvas.requestFullscreen();
+                else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+            });
+            
+            // Start audio on first interaction
+            document.body.addEventListener('click', () => {
+                if (audioTherapy.audioContext.state === 'suspended') {
+                    audioTherapy.audioContext.resume().then(() => {
+                        playButton.textContent = '❚❚';
+                    });
+                }
+            }, { once: true });
+        });
+    </script>
+</body>
+</html>
