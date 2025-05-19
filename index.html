@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binaural Therapy | 3D Orb Visualizer</title>
+    <title>Galactic Binaural Therapy | Particle Universe</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
@@ -76,10 +76,10 @@
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 this.currentMode = "stress"; // "stress" or "anxiety"
                 
-                // Base frequencies (perceptibly different)
+                // Base frequencies (perceptibly distinct)
                 this.baseFrequencies = {
-                    stress: { left: 200, right: 210 }, // 10Hz Alpha (brighter)
-                    anxiety: { left: 180, right: 186 }  // 6Hz Theta (deeper)
+                    stress: { left: 200, right: 210 }, // 10Hz Alpha
+                    anxiety: { left: 180, right: 186 }  // 6Hz Theta
                 };
                 
                 // Audio nodes
@@ -134,16 +134,16 @@
             
             startSpatialMovement() {
                 let angle = 0;
-                const radius = 2.5; // Wider movement for immersion
+                const radius = 3.0; // Wider movement
                 
-                // Smooth 8D audio motion
+                // Cinematic 8D audio motion
                 const moveSound = () => {
-                    angle += 0.003;
+                    angle += 0.002;
                     
-                    // Circular path with slight vertical drift
-                    const x = Math.cos(angle) * radius;
-                    const z = Math.sin(angle * 1.3) * radius;
-                    const y = Math.sin(angle * 0.7) * 0.8;
+                    // Elliptical path with vertical variation
+                    const x = Math.cos(angle * 0.7) * radius;
+                    const z = Math.sin(angle * 1.2) * radius;
+                    const y = Math.sin(angle * 0.5) * 1.5;
                     
                     this.panner.setPosition(x, y, z);
                     requestAnimationFrame(moveSound);
@@ -167,18 +167,18 @@
             }
         }
 
-        // ===== 3D ORB VISUALIZER =====
-        class OrbVisualizer {
+        // ===== GALACTIC PARTICLE VISUALIZER =====
+        class GalacticVisualizer {
             constructor(container) {
                 this.container = container;
                 this.scene = new THREE.Scene();
                 this.camera = new THREE.PerspectiveCamera(
-                    75, 
+                    60, 
                     window.innerWidth / window.innerHeight, 
                     0.1, 
                     1000
                 );
-                this.camera.position.z = 30;
+                this.camera.position.z = 50;
                 
                 this.renderer = new THREE.WebGLRenderer({ 
                     antialias: true,
@@ -187,76 +187,35 @@
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.container.appendChild(this.renderer.domElement);
                 
-                // Pulsing orb settings
-                this.pulseSpeed = 0.02;
-                this.pulsePhase = 0;
+                // Breathing rhythm (60BPM)
+                this.breathPhase = 0;
+                this.breathSpeed = 0.01;
                 
-                // Create a glowing orb
-                this.orb = this.createOrb();
-                this.scene.add(this.orb);
+                // Create particle systems
+                this.orbParticles = this.createOrbParticles(5000);
+                this.galaxyParticles = this.createGalaxyParticles(10000);
                 
-                // Add floating particles
-                this.particles = this.createParticles();
-                this.scene.add(this.particles);
+                this.scene.add(this.orbParticles);
+                this.scene.add(this.galaxyParticles);
                 
-                // Soft ambient light
-                const ambientLight = new THREE.AmbientLight(0x404040);
+                // Soft ambient glow
+                const ambientLight = new THREE.AmbientLight(0x222244);
                 this.scene.add(ambientLight);
-                
-                // Directional light for orb glow
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-                directionalLight.position.set(1, 1, 1);
-                this.scene.add(directionalLight);
                 
                 // Start animation
                 this.animate();
                 window.addEventListener('resize', () => this.onWindowResize());
             }
             
-            createOrb() {
-                const geometry = new THREE.SphereGeometry(5, 32, 32);
-                
-                // Gradient texture for the orb
-                const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 256;
-                const ctx = canvas.getContext('2d');
-                
-                const gradient = ctx.createRadialGradient(
-                    128, 128, 0,
-                    128, 128, 128
-                );
-                gradient.addColorStop(0, 'rgba(100, 200, 255, 1)');
-                gradient.addColorStop(0.7, 'rgba(50, 150, 255, 0.8)');
-                gradient.addColorStop(1, 'rgba(0, 100, 200, 0)');
-                
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, 256, 256);
-                
-                const texture = new THREE.CanvasTexture(canvas);
-                const material = new THREE.MeshPhongMaterial({
-                    map: texture,
-                    transparent: true,
-                    opacity: 0.9,
-                    emissive: 0x4488ff,
-                    emissiveIntensity: 0.5,
-                    specular: 0xffffff,
-                    shininess: 50
-                });
-                
-                return new THREE.Mesh(geometry, material);
-            }
-            
-            createParticles() {
-                const particleCount = 1000;
+            createOrbParticles(count) {
                 const particles = new THREE.BufferGeometry();
-                const positions = new Float32Array(particleCount * 3);
-                const colors = new Float32Array(particleCount * 3);
-                const sizes = new Float32Array(particleCount);
+                const positions = new Float32Array(count * 3);
+                const colors = new Float32Array(count * 3);
+                const sizes = new Float32Array(count);
                 
-                for (let i = 0; i < particleCount; i++) {
-                    // Position particles in a sphere
-                    const radius = 20 + Math.random() * 30;
+                // Create a spherical distribution
+                for (let i = 0; i < count; i++) {
+                    const radius = 5 * Math.random();
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.acos(2 * Math.random() - 1);
                     
@@ -264,30 +223,71 @@
                     positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
                     positions[i * 3 + 2] = radius * Math.cos(phi);
                     
-                    // Color variations (cool blues/purples)
-                    colors[i * 3] = 0.5 + Math.random() * 0.5;
-                    colors[i * 3 + 1] = 0.3 + Math.random() * 0.5;
-                    colors[i * 3 + 2] = 0.7 + Math.random() * 0.3;
+                    // Cool blue/purple gradient
+                    colors[i * 3] = 0.3 + Math.random() * 0.7; // R
+                    colors[i * 3 + 1] = 0.2 + Math.random() * 0.5; // G
+                    colors[i * 3 + 2] = 0.7 + Math.random() * 0.3; // B
                     
-                    sizes[i] = 0.1 + Math.random() * 0.5;
+                    sizes[i] = 0.1 + Math.random() * 0.3;
                 }
                 
                 particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
                 particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
                 
-                const particleMaterial = new THREE.PointsMaterial({
+                const material = new THREE.PointsMaterial({
                     size: 0.2,
                     vertexColors: true,
                     transparent: true,
-                    opacity: 0.8,
+                    opacity: 0.9,
                     blending: THREE.AdditiveBlending,
                     sizeAttenuation: true
                 });
                 
-                const particleSystem = new THREE.Points(particles, particleMaterial);
-                particleSystem.rotation.x = Math.random() * Math.PI;
-                particleSystem.rotation.y = Math.random() * Math.PI;
+                const particleSystem = new THREE.Points(particles, material);
+                particleSystem.userData.originalPositions = positions.slice(); // Clone for pulsing
+                
+                return particleSystem;
+            }
+            
+            createGalaxyParticles(count) {
+                const particles = new THREE.BufferGeometry();
+                const positions = new Float32Array(count * 3);
+                const colors = new Float32Array(count * 3);
+                const sizes = new Float32Array(count);
+                
+                // Spiral galaxy distribution
+                for (let i = 0; i < count; i++) {
+                    const radius = 10 + Math.random() * 80;
+                    const angle = Math.random() * Math.PI * 2;
+                    const spiral = Math.random() * Math.PI * 4;
+                    
+                    positions[i * 3] = radius * Math.cos(angle + spiral) * (0.8 + Math.random() * 0.4);
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                    positions[i * 3 + 2] = radius * Math.sin(angle + spiral) * (0.8 + Math.random() * 0.4);
+                    
+                    // Distant star colors
+                    colors[i * 3] = 0.5 + Math.random() * 0.5;
+                    colors[i * 3 + 1] = 0.3 + Math.random() * 0.7;
+                    colors[i * 3 + 2] = 0.5 + Math.random() * 0.5;
+                    
+                    sizes[i] = 0.05 + Math.random() * 0.2;
+                }
+                
+                particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+                
+                const material = new THREE.PointsMaterial({
+                    size: 0.1,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.7,
+                    blending: THREE.AdditiveBlending,
+                    sizeAttenuation: true
+                });
+                
+                const particleSystem = new THREE.Points(particles, material);
                 
                 return particleSystem;
             }
@@ -295,17 +295,27 @@
             animate() {
                 requestAnimationFrame(() => this.animate());
                 
-                // Orb pulse (gentle breathing rhythm)
-                this.pulsePhase += this.pulseSpeed;
-                const pulseScale = 1 + 0.1 * Math.sin(this.pulsePhase);
-                this.orb.scale.set(pulseScale, pulseScale, pulseScale);
+                // Breathing rhythm (60BPM)
+                this.breathPhase += this.breathSpeed;
+                const breathScale = 1 + 0.3 * Math.sin(this.breathPhase);
                 
-                // Orb glow intensity
-                this.orb.material.emissiveIntensity = 0.5 + 0.3 * Math.sin(this.pulsePhase * 0.5);
+                // Pulse the orb particles
+                const positions = this.orbParticles.geometry.attributes.position.array;
+                const originalPositions = this.orbParticles.userData.originalPositions;
                 
-                // Rotate particles slowly
-                this.particles.rotation.x += 0.001;
-                this.particles.rotation.y += 0.002;
+                for (let i = 0; i < positions.length; i++) {
+                    positions[i] = originalPositions[i] * breathScale;
+                }
+                this.orbParticles.geometry.attributes.position.needsUpdate = true;
+                
+                // Rotate the galaxy slowly
+                this.galaxyParticles.rotation.y += 0.0005;
+                this.galaxyParticles.rotation.x += 0.0002;
+                
+                // Gentle camera drift
+                this.camera.position.x = Math.sin(this.breathPhase * 0.3) * 2;
+                this.camera.position.y = Math.cos(this.breathPhase * 0.2) * 1;
+                this.camera.lookAt(0, 0, 0);
                 
                 this.renderer.render(this.scene, this.camera);
             }
@@ -324,7 +334,7 @@
             const modeToggle = document.getElementById('modeToggle');
             
             // Initialize systems
-            const visualizer = new OrbVisualizer(container);
+            const visualizer = new GalacticVisualizer(container);
             const audioTherapy = new BinauralTherapy();
             
             // Play/pause button
