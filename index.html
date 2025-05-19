@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galactic Binaural Therapy | Particle Universe</title>
+    <title>Binaural Therapy | Cosmic Particle Flow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
@@ -70,11 +70,11 @@
     </div>
 
     <script>
-        // ===== AUDIO ENGINE =====
+        // ===== AUDIO ENGINE (WITH CROSSFADES) =====
         class BinauralTherapy {
             constructor() {
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                this.currentMode = "stress"; // "stress" or "anxiety"
+                this.currentMode = "stress";
                 
                 // Base frequencies (perceptibly distinct)
                 this.baseFrequencies = {
@@ -90,7 +90,7 @@
                 this.panner.refDistance = 1;
                 this.panner.maxDistance = 10000;
                 
-                // Oscillators for binaural beats
+                // Oscillators
                 this.oscillators = {
                     left: this.audioContext.createOscillator(),
                     right: this.audioContext.createOscillator()
@@ -116,14 +116,35 @@
                 this.oscillators.left.start();
                 this.oscillators.right.start();
                 
-                // Start spatial movement
+                // Start organic spatial movement
                 this.startSpatialMovement();
             }
             
+            // SILENT FREQUENCY TRANSITIONS (50ms crossfade)
             setFrequency() {
+                const now = this.audioContext.currentTime;
+                const fadeTime = 0.05; // 50ms fade
+                
+                // Fade out old frequencies
+                this.oscillators.left.frequency.exponentialRampToValueAtTime(
+                    this.oscillators.left.frequency.value, 
+                    now + fadeTime
+                );
+                this.oscillators.right.frequency.exponentialRampToValueAtTime(
+                    this.oscillators.right.frequency.value, 
+                    now + fadeTime
+                );
+                
+                // Fade in new frequencies
                 const freq = this.baseFrequencies[this.currentMode];
-                this.oscillators.left.frequency.value = freq.left;
-                this.oscillators.right.frequency.value = freq.right;
+                this.oscillators.left.frequency.exponentialRampToValueAtTime(
+                    freq.left, 
+                    now + fadeTime * 2
+                );
+                this.oscillators.right.frequency.exponentialRampToValueAtTime(
+                    freq.right, 
+                    now + fadeTime * 2
+                );
             }
             
             toggleMode() {
@@ -132,18 +153,18 @@
                 return this.currentMode;
             }
             
+            // ORGANIC 8D MOTION (Bézier curves)
             startSpatialMovement() {
                 let angle = 0;
-                const radius = 3.0; // Wider movement
+                const radius = 3.0;
                 
-                // Cinematic 8D audio motion
                 const moveSound = () => {
                     angle += 0.002;
                     
-                    // Elliptical path with vertical variation
-                    const x = Math.cos(angle * 0.7) * radius;
-                    const z = Math.sin(angle * 1.2) * radius;
-                    const y = Math.sin(angle * 0.5) * 1.5;
+                    // Bézier-inspired path
+                    const x = Math.cos(angle * 0.7) * radius + Math.sin(angle * 0.3) * 1.5;
+                    const z = Math.sin(angle * 1.3) * radius + Math.cos(angle * 0.5) * 1.2;
+                    const y = Math.sin(angle * 0.9) * 0.8;
                     
                     this.panner.setPosition(x, y, z);
                     requestAnimationFrame(moveSound);
@@ -167,8 +188,8 @@
             }
         }
 
-        // ===== GALACTIC PARTICLE VISUALIZER =====
-        class GalacticVisualizer {
+        // ===== PARTICLE VISUALIZER (WITH BREATHING OPACITY) =====
+        class ParticleVisualizer {
             constructor(container) {
                 this.container = container;
                 this.scene = new THREE.Scene();
@@ -187,7 +208,7 @@
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.container.appendChild(this.renderer.domElement);
                 
-                // Breathing rhythm (60BPM)
+                // Breathing rhythm
                 this.breathPhase = 0;
                 this.breathSpeed = 0.01;
                 
@@ -198,11 +219,10 @@
                 this.scene.add(this.orbParticles);
                 this.scene.add(this.galaxyParticles);
                 
-                // Soft ambient glow
+                // Ambient glow
                 const ambientLight = new THREE.AmbientLight(0x222244);
                 this.scene.add(ambientLight);
                 
-                // Start animation
                 this.animate();
                 window.addEventListener('resize', () => this.onWindowResize());
             }
@@ -213,7 +233,7 @@
                 const colors = new Float32Array(count * 3);
                 const sizes = new Float32Array(count);
                 
-                // Create a spherical distribution
+                // Spherical distribution
                 for (let i = 0; i < count; i++) {
                     const radius = 5 * Math.random();
                     const theta = Math.random() * Math.PI * 2;
@@ -223,10 +243,9 @@
                     positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
                     positions[i * 3 + 2] = radius * Math.cos(phi);
                     
-                    // Cool blue/purple gradient
-                    colors[i * 3] = 0.3 + Math.random() * 0.7; // R
-                    colors[i * 3 + 1] = 0.2 + Math.random() * 0.5; // G
-                    colors[i * 3 + 2] = 0.7 + Math.random() * 0.3; // B
+                    colors[i * 3] = 0.3 + Math.random() * 0.7;
+                    colors[i * 3 + 1] = 0.2 + Math.random() * 0.5;
+                    colors[i * 3 + 2] = 0.7 + Math.random() * 0.3;
                     
                     sizes[i] = 0.1 + Math.random() * 0.3;
                 }
@@ -239,13 +258,13 @@
                     size: 0.2,
                     vertexColors: true,
                     transparent: true,
-                    opacity: 0.9,
+                    opacity: 0.7, // Initial opacity
                     blending: THREE.AdditiveBlending,
                     sizeAttenuation: true
                 });
                 
                 const particleSystem = new THREE.Points(particles, material);
-                particleSystem.userData.originalPositions = positions.slice(); // Clone for pulsing
+                particleSystem.userData.originalPositions = positions.slice();
                 
                 return particleSystem;
             }
@@ -256,7 +275,7 @@
                 const colors = new Float32Array(count * 3);
                 const sizes = new Float32Array(count);
                 
-                // Spiral galaxy distribution
+                // Spiral galaxy
                 for (let i = 0; i < count; i++) {
                     const radius = 10 + Math.random() * 80;
                     const angle = Math.random() * Math.PI * 2;
@@ -266,7 +285,6 @@
                     positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
                     positions[i * 3 + 2] = radius * Math.sin(angle + spiral) * (0.8 + Math.random() * 0.4);
                     
-                    // Distant star colors
                     colors[i * 3] = 0.5 + Math.random() * 0.5;
                     colors[i * 3 + 1] = 0.3 + Math.random() * 0.7;
                     colors[i * 3 + 2] = 0.5 + Math.random() * 0.5;
@@ -287,19 +305,17 @@
                     sizeAttenuation: true
                 });
                 
-                const particleSystem = new THREE.Points(particles, material);
-                
-                return particleSystem;
+                return new THREE.Points(particles, material);
             }
             
             animate() {
                 requestAnimationFrame(() => this.animate());
                 
-                // Breathing rhythm (60BPM)
+                // Breathing rhythm
                 this.breathPhase += this.breathSpeed;
                 const breathScale = 1 + 0.3 * Math.sin(this.breathPhase);
                 
-                // Pulse the orb particles
+                // Pulse orb particles
                 const positions = this.orbParticles.geometry.attributes.position.array;
                 const originalPositions = this.orbParticles.userData.originalPositions;
                 
@@ -308,14 +324,12 @@
                 }
                 this.orbParticles.geometry.attributes.position.needsUpdate = true;
                 
-                // Rotate the galaxy slowly
-                this.galaxyParticles.rotation.y += 0.0005;
-                this.galaxyParticles.rotation.x += 0.0002;
+                // BREATHING OPACITY EFFECT
+                this.orbParticles.material.opacity = 0.6 + 0.3 * Math.sin(this.breathPhase * 2);
+                this.orbParticles.material.needsUpdate = true;
                 
-                // Gentle camera drift
-                this.camera.position.x = Math.sin(this.breathPhase * 0.3) * 2;
-                this.camera.position.y = Math.cos(this.breathPhase * 0.2) * 1;
-                this.camera.lookAt(0, 0, 0);
+                // Rotate galaxy
+                this.galaxyParticles.rotation.y += 0.0005;
                 
                 this.renderer.render(this.scene, this.camera);
             }
@@ -334,7 +348,7 @@
             const modeToggle = document.getElementById('modeToggle');
             
             // Initialize systems
-            const visualizer = new GalacticVisualizer(container);
+            const visualizer = new ParticleVisualizer(container);
             const audioTherapy = new BinauralTherapy();
             
             // Play/pause button
@@ -343,7 +357,7 @@
                 playButton.textContent = isPlaying ? '❚❚' : '▶';
             });
             
-            // Toggle between stress/anxiety modes
+            // Toggle modes
             modeToggle.addEventListener('click', () => {
                 const newMode = audioTherapy.toggleMode();
                 modeToggle.textContent = newMode === "stress" 
@@ -351,13 +365,12 @@
                     : "Anxiety Relief (6Hz Theta)";
             });
             
-            // Enable fullscreen on tap
+            // Fullscreen on tap
             container.addEventListener('click', () => {
                 if (container.requestFullscreen) container.requestFullscreen();
-                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
             });
             
-            // Start audio on first interaction
+            // Start audio on first tap
             document.body.addEventListener('click', () => {
                 if (audioTherapy.audioContext.state === 'suspended') {
                     audioTherapy.audioContext.resume().then(() => {
